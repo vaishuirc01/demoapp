@@ -11,7 +11,8 @@ import {
 } from "@mui/material";
 import { motion } from "framer-motion";
 
-const API = "http://localhost:5000/api/players";
+const API = "https://demoapp-slog.onrender.com/api/players";
+;
 
 export default function App() {
   const [name, setName] = useState("");
