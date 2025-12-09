@@ -12,7 +12,6 @@ import {
 import { motion } from "framer-motion";
 
 const API = "https://demoapp-slog.onrender.com/api/players";
-;
 
 export default function App() {
   const [name, setName] = useState("");
@@ -22,18 +21,40 @@ export default function App() {
   const [attempts, setAttempts] = useState(0);
   const [gameOver, setGameOver] = useState(false);
   const [leaderboard, setLeaderboard] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [guessError, setGuessError] = useState("");
 
+  // START GAME
   const startGame = async () => {
     if (!name.trim()) return alert("Enter your name");
-    const res = await axios.post(`${API}/add`, { name });
-    setPlayer(res.data);
-    setMessage("Game Started! Guess 1–100");
+
+    setLoading(true);
+
+    setTimeout(async () => {
+      const res = await axios.post(`${API}/add`, { name });
+      setPlayer(res.data);
+      setMessage("Game Started! Guess 1–100");
+      setLoading(false);
+    }, 1500);
   };
 
+  // GUESS FUNCTION
   const makeGuess = async () => {
-    const num = Number(guess);
-    const target = player.targetNumber;
+    if (!guess.trim()) {
+      setGuessError("Enter a number!");
+      return;
+    }
 
+    const num = Number(guess);
+
+    if (isNaN(num) || num < 1 || num > 100) {
+      setGuessError("Enter a valid number (1 - 100)");
+      return;
+    }
+
+    setGuessError("");
+
+    const target = player.targetNumber;
     let won = false;
     let msg = "";
 
@@ -62,11 +83,38 @@ export default function App() {
     });
   };
 
+  // SCOREBOARD
   const showLeaderboard = async () => {
     const res = await axios.get(API);
     const sorted = res.data.sort((a, b) => a.attempts - b.attempts);
     setLeaderboard(sorted.slice(0, 3));
   };
+
+  // LOADING SCREEN
+  if (loading)
+    return (
+      <Box
+        sx={{
+          height: "100vh",
+          background: "#000",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+        }}
+      >
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ repeat: Infinity, duration: 0.7 }}
+          style={{
+            width: 70,
+            height: 70,
+            borderRadius: "50%",
+            border: "6px solid #ff0033",
+            borderTopColor: "transparent",
+          }}
+        ></motion.div>
+      </Box>
+    );
 
   // START SCREEN
   if (!player)
@@ -185,6 +233,8 @@ export default function App() {
                 label="Enter guess"
                 fullWidth
                 value={guess}
+                error={!!guessError}
+                helperText={guessError}
                 onChange={(e) => setGuess(e.target.value)}
                 InputLabelProps={{ style: { color: "#aaa" } }}
                 sx={{
@@ -236,9 +286,14 @@ export default function App() {
         </CardContent>
       </Card>
 
-      {/* LEADERBOARD */}
+      {/* SCOREBOARD */}
       {leaderboard.length > 0 && (
-        <Box component={motion.div} initial={{ opacity: 0 }} animate={{ opacity: 1 }} mt={4}>
+        <Box
+          component={motion.div}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          mt={4}
+        >
           <Typography variant="h4" sx={{ color: "#ff0033", mb: 3 }}>
             🏆 Leaderboard
           </Typography>
